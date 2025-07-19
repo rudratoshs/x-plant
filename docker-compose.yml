@@ -1,0 +1,178 @@
+# 📄 File: docker-compose.yml
+#
+# 🧭 Purpose (Layman Explanation):
+# Sets up a complete development environment with all the services our plant care app needs,
+# like creating a mini-ecosystem where our app, database cache, and tools can work together.
+#
+# 🧪 Purpose (Technical Summary):
+# Defines multi-container Docker setup for local development with FastAPI app, Redis cache,
+# health checks, and volume mounts for live code reloading and data persistence.
+#
+# 🔗 Dependencies:
+# - Docker and Docker Compose installed
+# - requirements/base.txt (for Python dependencies)
+# - Dockerfile (for app container build)
+# - .env file (for environment variables)
+#
+# 🔄 Connected Modules / Calls From:
+# - Local development setup (docker-compose up)
+# - Development scripts and automation
+# - Team onboarding and environment setup
+# - CI/CD testing pipelines
+
+version: '3.8'
+
+services:
+  # Main FastAPI Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: plant_care_api
+    ports:
+      - "8000:8000"
+    environment:
+      # Development environment settings
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - REDIS_URL=redis://redis:6379/0
+      # Supabase credentials (from .env file)
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      # JWT settings
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
+    volumes:
+      # Live code reloading for development
+      - ./app:/app/app:ro
+      - ./config:/app/config:ro
+      - ./migrations:/app/migrations:ro
+      # Logs persistence
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - plant_care_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Redis Cache & Session Store
+  redis:
+    image: redis:7.2-alpine
+    container_name: plant_care_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      # Redis data persistence
+      - redis_data:/data
+      # Redis configuration
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    networks:
+      - plant_care_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    sysctls:
+      # Optimize Redis memory handling
+      - net.core.somaxconn=1024
+
+  # Celery Worker for Background Jobs
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: plant_care_celery_worker
+    command: ["celery", "-A", "app.background_jobs.celery_app", "worker", "--loglevel=info", "--concurrency=4"]
+    environment:
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379/0
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}      
+      - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}  
+    volumes:
+      - ./app:/app/app:ro
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - plant_care_network
+    dns:
+    - 1.1.1.1
+    - 8.8.8.8
+    restart: unless-stopped
+
+  # Celery Beat for Scheduled Tasks
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: plant_care_celery_beat
+    command: ["celery", "-A", "app.background_jobs.celery_app", "beat", "--loglevel=info"]
+    environment:
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379/0
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}      
+      - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}  
+    volumes:
+      - ./app:/app/app:ro
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+      - celery_beat_data:/app/celerybeat-schedule.db  # ✅ FIXED
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - plant_care_network
+    restart: unless-stopped
+
+  # Redis Commander (Redis GUI for development)
+  redis_commander:
+    image: rediscommander/redis-commander:latest
+    container_name: plant_care_redis_gui
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0
+      - HTTP_USER=admin
+      - HTTP_PASSWORD=admin
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - plant_care_network
+    profiles:
+      - tools  # Only start with --profile tools
+    restart: unless-stopped
+
+# Networks
+networks:
+  plant_care_network:
+    driver: bridge
+    name: plant_care_network
+
+# Persistent Volumes
+volumes:
+  redis_data:
+    name: plant_care_redis_data
+  celery_beat_data:
+    name: plant_care_celery_beat_data

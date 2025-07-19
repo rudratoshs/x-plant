@@ -1,0 +1,334 @@
+# 📄 File: pyproject.toml
+#
+# 🧭 Purpose (Layman Explanation):
+# Configuration file that tells Python how to build, test, and manage our plant care app,
+# like an instruction manual for setting up the development environment.
+#
+# 🧪 Purpose (Technical Summary):
+# Python project configuration using modern standards (PEP 518/621) defining build system,
+# dependencies, testing configuration, and development tools for the Plant Care application.
+#
+# 🔗 Dependencies:
+# - Python 3.11+ (minimum supported version)
+# - pip (package installer) 
+# - pytest (testing framework)
+# - Various development tools (linters, formatters)
+#
+# 🔄 Connected Modules / Calls From:
+# - pip install commands (dependency resolution)
+# - pytest test runner (testing configuration)
+# - CI/CD pipelines (automated testing and building)
+# - Development environment setup scripts
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plant-care-backend"
+version = "1.0.0"
+description = "Plant Care Application - Comprehensive plant care management system"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Plant Care Team", email = "team@plantcare.app"}
+]
+maintainers = [
+    {name = "Plant Care Team", email = "team@plantcare.app"}
+]
+keywords = [
+    "plant-care",
+    "agriculture", 
+    "fastapi",
+    "supabase",
+    "ai",
+    "iot",
+    "mobile-backend"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Home and Garden",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+requires-python = ">=3.11"
+
+# Core dependencies (production)
+dependencies = [
+    "fastapi>=0.104.1",
+    "uvicorn[standard]>=0.24.0",
+    "sqlalchemy>=2.0.23",
+    "alembic>=1.12.1",
+    "asyncpg>=0.29.0",
+    "supabase>=2.0.0",
+    "redis>=5.0.1",
+    "aioredis>=2.0.1",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.6",
+    "httpx>=0.25.2",
+    "aiohttp>=3.9.1",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0.1",
+    "Pillow>=10.1.0",
+    "celery>=5.3.4",
+    "slowapi>=0.1.9",
+    "structlog>=23.2.0",
+    "python-dateutil>=2.8.2",
+    "orjson>=3.9.10"
+]
+
+# Optional dependencies for different environments
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.21.1",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "httpx>=0.25.2",  # For testing HTTP clients
+    "black>=23.11.0",  # Code formatting
+    "isort>=5.12.0",  # Import sorting
+    "flake8>=6.1.0",  # Linting
+    "mypy>=1.7.1",  # Type checking
+    "pre-commit>=3.5.0",  # Git hooks
+    "coverage>=7.3.2"  # Test coverage
+]
+
+# Testing dependencies
+test = [
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.21.1", 
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "httpx>=0.25.2",
+    "coverage>=7.3.2"
+]
+
+# Production dependencies
+prod = [
+    "gunicorn>=21.2.0",  # Production WSGI server
+    "sentry-sdk>=1.38.0",  # Error monitoring
+    "prometheus-client>=0.19.0"  # Metrics
+]
+
+# Documentation dependencies  
+docs = [
+    "mkdocs>=1.5.3",
+    "mkdocs-material>=9.4.8",
+    "mkdocstrings[python]>=0.24.0"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/plant-care/backend"
+"Documentation" = "https://docs.plantcare.app"
+"Repository" = "https://github.com/plant-care/backend"
+"Bug Tracker" = "https://github.com/plant-care/backend/issues"
+"Changelog" = "https://github.com/plant-care/backend/blob/main/CHANGELOG.md"
+
+[project.scripts]
+plant-care-api = "app.main:app"
+
+# =============================================================================
+# TOOL CONFIGURATIONS
+# =============================================================================
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["tests*", "docs*"]
+
+# Black code formatting configuration
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  migrations/
+  | \.git/
+  | \.venv/
+  | build/
+  | dist/
+)/
+'''
+
+# isort import sorting configuration
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["app"]
+known_third_party = ["fastapi", "pydantic", "sqlalchemy", "supabase"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+
+# pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers", 
+    "--strict-config",
+    "--cov=app",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml",
+    "--cov-fail-under=80"
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "e2e: marks tests as end-to-end tests"
+]
+asyncio_mode = "auto"
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/__init__.py",
+    "*/conftest.py"
+]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod"
+]
+show_missing = true
+skip_covered = false
+
+# MyPy type checking configuration
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+# Ignore missing imports for third-party packages
+[[tool.mypy.overrides]]
+module = [
+    "supabase.*",
+    "redis.*",
+    "celery.*",
+    "slowapi.*"
+]
+ignore_missing_imports = true
+
+# Flake8 linting configuration (in setup.cfg format for compatibility)
+[tool.flake8]
+max-line-length = 88
+extend-ignore = [
+    "E203",  # whitespace before ':'
+    "E501",  # line too long (handled by black)
+    "W503",  # line break before binary operator
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    "migrations/",
+    ".venv/",
+    "build/",
+    "dist/"
+]
+per-file-ignores = [
+    "__init__.py:F401",  # Allow unused imports in __init__.py
+]
+
+# Bandit security linting
+[tool.bandit]
+exclude_dirs = ["tests", "migrations"]
+skips = ["B101", "B601"]  # Skip assert_used and shell_injection_process
+
+# Ruff (alternative fast linter) configuration
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+extend-exclude = ["migrations/"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports
+"test_*.py" = ["S101"]    # Allow asserts in tests
+
+# Pre-commit hooks configuration (referenced from .pre-commit-config.yaml)
+[tool.pre-commit]
+repos = [
+    {
+        repo = "https://github.com/pre-commit/pre-commit-hooks",
+        rev = "v4.5.0",
+        hooks = [
+            "trailing-whitespace",
+            "end-of-file-fixer", 
+            "check-yaml",
+            "check-added-large-files"
+        ]
+    },
+    {
+        repo = "https://github.com/psf/black",
+        rev = "23.11.0", 
+        hooks = ["black"]
+    },
+    {
+        repo = "https://github.com/pycqa/isort",
+        rev = "5.12.0",
+        hooks = ["isort"]
+    },
+    {
+        repo = "https://github.com/pycqa/flake8",
+        rev = "6.1.0",
+        hooks = ["flake8"]
+    }
+]
